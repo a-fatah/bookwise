@@ -5,6 +5,7 @@ project/project/
 
 # IDE files
 .idea/
+.bsp/
 *.class
 *.idea_modules/
 *.ipr
