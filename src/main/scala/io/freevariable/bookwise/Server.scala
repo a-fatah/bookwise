@@ -4,6 +4,7 @@ import cats.effect._
 import com.comcast.ip4s._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import io.freevariable.bookwise.models.{Author, Book}
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
@@ -13,10 +14,7 @@ import org.http4s.implicits._
 
 object Server extends IOApp {
 
-  case class Book(title: String, author: Author, pages: Int)
-  case class Author(name: String)
-
-  val books = List(
+  val books: Seq[Book] = List(
     Book("To Kill a Mockingbird", Author("Harper Lee"), 281),
     Book("The Great Gatsby", Author("F. Scott Fitzgerald"), 180),
     Book("Pride and Prejudice", Author("Jane Austen"), 279),
