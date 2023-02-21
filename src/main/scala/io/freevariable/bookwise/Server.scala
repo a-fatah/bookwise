@@ -1,6 +1,7 @@
 package io.freevariable.bookwise
 
 import cats.effect._
+import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -39,7 +40,17 @@ object Server extends IOApp {
         }
     }
 
-    val app = bookRoutes.orNotFound
+    val authorRoutes = HttpRoutes.of[IO] {
+      case GET -> Root / "authors" =>
+        Ok(books.map(_.author).distinct.asJson)
+      case GET -> Root / "authors" / IntVar(id) =>
+        books.lift(id) match {
+          case Some(book) => Ok(book.author.asJson)
+          case None => NotFound()
+        }
+    }
+
+    val app = (bookRoutes <+> authorRoutes).orNotFound
 
     val server = EmberServerBuilder
       .default[IO]
