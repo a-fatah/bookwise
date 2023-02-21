@@ -28,3 +28,8 @@ lazy val circe = Seq(
 ).map(_ % circeVersion)
 
 libraryDependencies ++= http4s ++ cats ++ circe
+
+libraryDependencies ++= Seq(
+  "com.typesafe.slick" %% "slick" % "3.3.3",
+  "org.postgresql" % "postgresql" % "42.2.24"
+)
