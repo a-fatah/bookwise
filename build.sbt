@@ -33,3 +33,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.3.3",
   "org.postgresql" % "postgresql" % "42.2.24"
 )
+
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "3.2.10" % Test,
+  "org.scalacheck" %% "scalacheck" % "1.15.4" % Test
+)
