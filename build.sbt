@@ -31,10 +31,14 @@ libraryDependencies ++= http4s ++ cats ++ circe
 
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.3.3",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.3",
   "org.postgresql" % "postgresql" % "42.2.24"
 )
 
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.10" % Test,
-  "org.scalacheck" %% "scalacheck" % "1.15.4" % Test
+  "org.scalacheck" %% "scalacheck" % "1.15.4" % Test,
+  "org.scalatestplus" %% "scalacheck-1-17" % "3.2.15.0" % Test
 )
+
+libraryDependencies += "com.h2database" % "h2" % "1.4.200" % Test
