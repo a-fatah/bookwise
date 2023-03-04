@@ -42,17 +42,24 @@ trait BooksSchema { this: DatabaseProvider =>
     IO(liquibase.update(""))
   }
 
-  val tableQuery = TableQuery[BooksTable]
+  val books = TableQuery[BooksTable]
+  val authors = TableQuery[AuthorsTable]
 
   trait BookRepository {
-    def all(): IO[Seq[BookEntity]]
-    def get(id: Long): IO[Option[BookEntity]]
+    def all(): IO[Seq[(BookEntity, AuthorEntity)]]
+    def get(id: Long): IO[Option[(BookEntity, AuthorEntity)]]
   }
 
   class BookRepositoryImpl extends BookRepository {
-    def get(id: Long) = IO.fromFuture(IO(db.run(tableQuery.filter(_.id === id).result.headOption)))
+    def get(id: Long) = {
+      val result = books.join(authors).on(_.authorId === _.id).filter(_._1.id === id).result
+      IO.fromFuture(IO(db.run(result))).map(_.headOption)
+    }
 
-    override def all(): IO[Seq[BookEntity]] = IO.fromFuture(IO(db.run(tableQuery.result)))
+    override def all(): IO[Seq[(BookEntity, AuthorEntity)]] = {
+      val result = books.join(authors).on(_.authorId === _.id).result
+      IO.fromFuture(IO(db.run(result)))
+    }
   }
 
 }
@@ -60,6 +67,12 @@ trait BooksSchema { this: DatabaseProvider =>
 class BookService {
   self: BooksSchema with DatabaseProvider =>
 
-  def getAll(): IO[Seq[BookEntity]] = repository.all()
-  def get(id: Long): IO[Option[BookEntity]] = repository.get(id)
+  def getAll(): IO[Seq[Book]] = repository.all() flatMap { seq =>
+    IO(seq.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
+  }
+
+  def get(id: Long): IO[Option[Book]] = repository.get(id) flatMap { opt =>
+    IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
+  }
+
 }
