@@ -1,6 +1,9 @@
 package io.freevariable.bookwise
 
 import cats.effect.IO
+import liquibase.Liquibase
+import liquibase.database.jvm.JdbcConnection
+import liquibase.resource.ClassLoaderResourceAccessor
 import slick.jdbc.JdbcProfile
 
 
@@ -25,10 +28,18 @@ trait BooksDatabase { this: DatabaseLayer =>
     def * = (id.?, title, authorId, pages) <> (BookEntity.tupled, BookEntity.unapply)
   }
 
-  class AuthorsTable(tag: Tag) extends Table[AuthorEntity](tag, "authors") with HasIdColumn[Long] {
+  class AuthorsTable(tag: Tag) extends Table[AuthorEntity](tag, "authors") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("name")
     def * = (id.?, name) <> (AuthorEntity.tupled, AuthorEntity.unapply)
+  }
+
+  val repository = new BooksRepositoryImpl
+
+  def runMigrations(): IO[Unit] = {
+    val liquibase = new Liquibase("db/changelog/changelog-master.xml",
+      new ClassLoaderResourceAccessor(), new JdbcConnection(db.source.createConnection()))
+    IO(liquibase.update(""))
   }
 
   val tableQuery = TableQuery[BooksTable]
