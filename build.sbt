@@ -42,3 +42,7 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies += "com.h2database" % "h2" % "1.4.200" % Test
+
+libraryDependencies ++= Seq(
+  "org.liquibase" % "liquibase-core" % "4.4.2",
+)
