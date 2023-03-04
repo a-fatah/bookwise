@@ -1,6 +1,7 @@
 package io.freevariable.bookwise
 
 import cats.effect._
+import cats.effect.unsafe.implicits.global
 import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s._
 import io.circe.generic.auto._
@@ -13,43 +14,39 @@ import org.http4s.implicits._
 
 
 object Server extends IOApp {
-  // TODO: replace with a database
-  val books: Seq[Book] = List(
-    Book("To Kill a Mockingbird", Author("Harper Lee"), 281),
-    Book("The Great Gatsby", Author("F. Scott Fitzgerald"), 180),
-    Book("Pride and Prejudice", Author("Jane Austen"), 279),
-    Book("1984", Author("George Orwell"), 328),
-    Book("The Catcher in the Rye", Author("J.D. Salinger"), 234),
-    Book("One Hundred Years of Solitude", Author("Gabriel Garcia Marquez"), 417),
-    Book("Brave New World", Author("Aldous Huxley"), 288),
-    Book("The Hobbit", Author("J.R.R. Tolkien"), 304),
-    Book("To the Lighthouse", Author("Virginia Woolf"), 209),
-    Book("The Picture of Dorian Gray", Author("Oscar Wilde"), 254)
-  )
 
   def run(args: List[String]): IO[ExitCode] = {
 
+    trait PostgresDatabaseLayer extends DatabaseLayer {
+      override val profile = slick.jdbc.PostgresProfile
+      import profile.api._
+      val db: Database = Database.forConfig("db.postgres")
+    }
+
+    trait PostgresDatabaseModule extends BooksDatabase with PostgresDatabaseLayer
+
+    val booksModule = new BooksDatabaseModule with PostgresDatabaseModule
+
+    println("Running migrations...")
+    booksModule.runMigrations().unsafeRunSync()
+    println("Migrations complete.")
+
+    // initialize the server
     val bookRoutes = HttpRoutes.of[IO] {
-      case GET -> Root / "books" =>
+      case GET -> Root / "books" => {
+        val books = booksModule.getAll().unsafeRunSync()
         Ok(books.asJson)
-      case GET -> Root / "books" / IntVar(id) =>
-        books.lift(id) match {
+      }
+      case GET -> Root / "books" / IntVar(id) => {
+        val book = booksModule.get(id).unsafeRunSync()
+        book match {
           case Some(book) => Ok(book.asJson)
           case None => NotFound()
         }
+      }
     }
 
-    val authorRoutes = HttpRoutes.of[IO] {
-      case GET -> Root / "authors" =>
-        Ok(books.map(_.author).distinct.asJson)
-      case GET -> Root / "authors" / IntVar(id) =>
-        books.lift(id) match {
-          case Some(book) => Ok(book.author.asJson)
-          case None => NotFound()
-        }
-    }
-
-    val app = (bookRoutes <+> authorRoutes).orNotFound
+    val app = bookRoutes.orNotFound
 
     val server = EmberServerBuilder
       .default[IO]

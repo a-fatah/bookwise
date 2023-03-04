@@ -46,9 +46,12 @@ trait BooksDatabase { this: DatabaseLayer =>
 
   trait BooksRepository {
     def all(): IO[Seq[BookEntity]]
+    def get(id: Long): IO[Option[BookEntity]]
   }
 
   class BooksRepositoryImpl extends BooksRepository {
+    def get(id: Long) = IO.fromFuture(IO(db.run(tableQuery.filter(_.id === id).result.headOption)))
+
     override def all(): IO[Seq[BookEntity]] = IO.fromFuture(IO(db.run(tableQuery.result)))
   }
 
@@ -56,7 +59,7 @@ trait BooksDatabase { this: DatabaseLayer =>
 
 class BooksDatabaseModule {
   self: BooksDatabase with DatabaseLayer =>
-  val repository = new BooksRepositoryImpl
 
   def getAll(): IO[Seq[BookEntity]] = repository.all()
+  def get(id: Long): IO[Option[BookEntity]] = repository.get(id)
 }
