@@ -17,28 +17,27 @@ object Server extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = {
 
-    trait PostgresDatabaseLayer extends DatabaseLayer {
+    trait PostgresDatabaseProvider extends DatabaseProvider {
       override val profile = slick.jdbc.PostgresProfile
       import profile.api._
       val db: Database = Database.forConfig("db.postgres")
     }
 
-    trait PostgresDatabaseModule extends BooksDatabase with PostgresDatabaseLayer
+    trait PostgresModule extends PostgresDatabaseProvider with BooksSchema
 
-    val booksModule = new BooksDatabaseModule with PostgresDatabaseModule
+    val bookService = new BookService with PostgresModule
 
     println("Running migrations...")
-    booksModule.runMigrations().unsafeRunSync()
+    bookService.runMigrations().unsafeRunSync()
     println("Migrations complete.")
 
-    // initialize the server
     val bookRoutes = HttpRoutes.of[IO] {
       case GET -> Root / "books" => {
-        val books = booksModule.getAll().unsafeRunSync()
+        val books = bookService.getAll().unsafeRunSync()
         Ok(books.asJson)
       }
       case GET -> Root / "books" / IntVar(id) => {
-        val book = booksModule.get(id).unsafeRunSync()
+        val book = bookService.get(id).unsafeRunSync()
         book match {
           case Some(book) => Ok(book.asJson)
           case None => NotFound()

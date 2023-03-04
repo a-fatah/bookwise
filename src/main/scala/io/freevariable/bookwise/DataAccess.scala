@@ -7,7 +7,7 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import slick.jdbc.JdbcProfile
 
 
-trait DatabaseLayer {
+trait DatabaseProvider {
   val profile: JdbcProfile
 
   import profile.api._
@@ -15,7 +15,7 @@ trait DatabaseLayer {
   val db: Database
 }
 
-trait BooksDatabase { this: DatabaseLayer =>
+trait BooksSchema { this: DatabaseProvider =>
 
   import profile.api._
 
@@ -34,7 +34,7 @@ trait BooksDatabase { this: DatabaseLayer =>
     def * = (id.?, name) <> (AuthorEntity.tupled, AuthorEntity.unapply)
   }
 
-  val repository = new BooksRepositoryImpl
+  val repository = new BookRepositoryImpl
 
   def runMigrations(): IO[Unit] = {
     val liquibase = new Liquibase("db/changelog/changelog-master.xml",
@@ -44,12 +44,12 @@ trait BooksDatabase { this: DatabaseLayer =>
 
   val tableQuery = TableQuery[BooksTable]
 
-  trait BooksRepository {
+  trait BookRepository {
     def all(): IO[Seq[BookEntity]]
     def get(id: Long): IO[Option[BookEntity]]
   }
 
-  class BooksRepositoryImpl extends BooksRepository {
+  class BookRepositoryImpl extends BookRepository {
     def get(id: Long) = IO.fromFuture(IO(db.run(tableQuery.filter(_.id === id).result.headOption)))
 
     override def all(): IO[Seq[BookEntity]] = IO.fromFuture(IO(db.run(tableQuery.result)))
@@ -57,8 +57,8 @@ trait BooksDatabase { this: DatabaseLayer =>
 
 }
 
-class BooksDatabaseModule {
-  self: BooksDatabase with DatabaseLayer =>
+class BookService {
+  self: BooksSchema with DatabaseProvider =>
 
   def getAll(): IO[Seq[BookEntity]] = repository.all()
   def get(id: Long): IO[Option[BookEntity]] = repository.get(id)
