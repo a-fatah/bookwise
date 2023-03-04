@@ -32,17 +32,18 @@ object Server extends IOApp {
     println("Migrations complete.")
 
     val bookRoutes = HttpRoutes.of[IO] {
-      case GET -> Root / "books" => {
-        val books = bookService.getAll().unsafeRunSync()
-        Ok(books.asJson)
-      }
-      case GET -> Root / "books" / IntVar(id) => {
-        val book = bookService.get(id).unsafeRunSync()
-        book match {
+
+      case GET -> Root / "books" =>
+        bookService.getAll().flatMap(books =>
+          Ok(books.asJson)
+        )
+
+      case GET -> Root / "books" / IntVar(id) =>
+        bookService.get(id).flatMap {
           case Some(book) => Ok(book.asJson)
           case None => NotFound()
         }
-      }
+
     }
 
     val app = bookRoutes.orNotFound
