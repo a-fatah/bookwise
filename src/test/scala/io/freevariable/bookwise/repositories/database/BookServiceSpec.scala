@@ -41,17 +41,6 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
     book <- arbitraryBookEntity.arbitrary
   } yield Book(book.title, Author(author.name), book.pages)
 
-  "BookService" should "pass" in {
-
-    val numbers = Gen.listOf(arbitraryBook)
-
-    forAll(numbers) {
-      case list => println(list)
-    }
-
-    assert(true)
-  }
-
   "BookService" should "return all books" in {
 
     // import cats effect unsafe global
