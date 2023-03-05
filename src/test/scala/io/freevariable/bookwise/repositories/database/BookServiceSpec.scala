@@ -1,11 +1,13 @@
 package io.freevariable.bookwise.repositories.database
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxTuple2Semigroupal
+import cats.implicits.{catsSyntaxParallelSequence1, catsSyntaxTuple2Parallel, catsSyntaxTuple2Semigroupal, toTraverseOps}
 import io.freevariable.bookwise._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers.contain
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
@@ -43,45 +45,27 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
 
   "BookService" should "return all books" in {
 
-    // import cats effect unsafe global
     import cats.effect.unsafe.implicits.global
 
     bookService.runMigrations().unsafeRunSync()
 
     val booksGen: Gen[List[Book]] = Gen.listOf(arbitraryBook)
 
-
     forAll(booksGen) { books =>
-
-      println(books)
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
-      val insertActions = books.map { case book =>
-        bookService.create(book)
-      }
+      val insertActions = books.map(bookService.create)
 
-      // Run the insertActions in a transaction
-      val insertsCombined: IO[List[Book]] = insertActions.foldLeft(IO.pure(List.empty[Book])) { (acc, action) =>
-        for {
-          seq <- acc
-          book <- action
-        } yield seq :+ book
-      }
+      // Run inserts in parallel
+      val inserts: IO[List[Book]] = IO.parSequenceN(4)(insertActions)
+      val allBooks = bookService.getAll()
 
-
-      val result = insertsCombined.flatMap { addedBooks =>
-        val allBooks = bookService.getAll()
-
-        (allBooks, IO.pure(addedBooks)).tupled
-      }
-
-      implicit val runtime: cats.effect.unsafe.IORuntime = cats.effect.unsafe.implicits.global
-
-      val (allBooks, newBooks) = result.unsafeRunSync()
-
-      if(!newBooks.isEmpty) {
-        assert(allBooks.containsSlice(newBooks))
+      inserts.flatMap { insertedBooks =>
+        allBooks.map { allBooks =>
+          if (insertedBooks.nonEmpty)
+            allBooks should contain allElementsOf insertedBooks
+        }
       }
 
     }
