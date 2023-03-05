@@ -1,9 +1,8 @@
 package io.freevariable.bookwise.repositories.database
 
 import cats.effect.IO
-import cats.implicits.{catsSyntaxParallelSequence1, catsSyntaxTuple2Parallel, catsSyntaxTuple2Semigroupal, toTraverseOps}
 import io.freevariable.bookwise._
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers.contain
@@ -38,7 +37,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
       val insertActions = books.map(bookService.create)
 
       // Run inserts in parallel
-      val inserts: IO[List[Book]] = IO.parSequenceN(4)(insertActions)
+      val inserts: IO[List[(BookId, Book)]] = IO.parSequenceN(4)(insertActions)
       val allBooks = bookService.getAll()
 
       inserts.flatMap { insertedBooks =>
@@ -53,30 +52,21 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
 
   "BookService" should "return a book by id" in {
 
-    import cats.effect.unsafe.implicits.global
+    implicit val runtime: cats.effect.unsafe.IORuntime = cats.effect.unsafe.implicits.global
 
-    bookService.runMigrations().unsafeRunSync()
+    bookService.runMigrations().unsafeRunSync()(runtime)
 
-    val booksGen: Gen[List[Book]] = Gen.listOf(arbitraryBook)
-
-    forAll(booksGen) { books =>
-
+    arbitraryBook.flatMap(book => {
       import scala.concurrent.ExecutionContext.Implicits.global
-
-      val insertActions = books.map(bookService.create)
-
-      // Run inserts in parallel
-      val inserts: IO[List[Book]] = IO.parSequenceN(4)(insertActions)
-      val allBooks = bookService.getAll()
-
-      inserts.flatMap { insertedBooks =>
-        allBooks.map { allBooks =>
-          if (insertedBooks.nonEmpty)
-            allBooks should contain allElementsOf insertedBooks
+      bookService.create(book).flatMap {
+        case (id, book) => {
+          bookService.get(id).map { maybeBook =>
+            maybeBook should contain(book)
+          }
         }
       }
+    })
 
-    }
   }
 
 }
