@@ -84,13 +84,13 @@ class BookService {
     IO(seq.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
   }
 
-  def get(id: Long): IO[Option[Book]] = repository.get(id) flatMap { opt =>
+  def get(id: BookId): IO[Option[Book]] = repository.get(id.value) flatMap { opt =>
     IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
   }
 
-  def create(book: Book)(implicit ec: ExecutionContext): IO[Book] = {
+  def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
     repository.save(BookEntity(None, book.title, 0, book.pages), AuthorEntity(None, book.author.name)).map {
-      case (author, book) => Book(book.title, Author(author.name), book.pages)
+      case (author, book) => (BookId(book.id.get), Book(book.title, Author(author.name), book.pages))
     }
   }
 
