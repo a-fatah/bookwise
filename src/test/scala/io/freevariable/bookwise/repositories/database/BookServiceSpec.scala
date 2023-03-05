@@ -1,18 +1,15 @@
 package io.freevariable.bookwise.repositories.database
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import cats.implicits.catsSyntaxTuple2Semigroupal
-import io.freevariable.bookwise.{Author, AuthorEntity, Book, BookEntity, BookService, BooksSchema, DatabaseProvider}
+import io.freevariable.bookwise._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
 class BookRepositorySpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPropertyChecks {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   trait H2DatabaseProvider extends DatabaseProvider {
     override val profile = slick.jdbc.H2Profile
@@ -55,7 +52,7 @@ class BookRepositorySpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPr
     assert(true)
   }
 
-  "BooksRepository" should "return all books" in {
+  "BookService" should "return all books" in {
 
     // import cats effect unsafe global
     import cats.effect.unsafe.implicits.global
@@ -100,15 +97,5 @@ class BookRepositorySpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPr
 
     }
   }
-
-}
-
-
-trait Functor[F[A]] {
-
-  def map[A, B](fa: F[A])(f: A => B): F[B]
-
-  def lift[A, B](f: A =>B): F[A] => F[B] = map(_)(f)
-
 
 }
