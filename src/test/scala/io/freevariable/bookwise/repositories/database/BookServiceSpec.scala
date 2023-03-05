@@ -9,7 +9,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 
-class BookRepositorySpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPropertyChecks {
+class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPropertyChecks {
 
   trait H2DatabaseProvider extends DatabaseProvider {
     override val profile = slick.jdbc.H2Profile
