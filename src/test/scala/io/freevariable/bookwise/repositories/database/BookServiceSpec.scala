@@ -9,6 +9,8 @@ import org.scalatest.matchers.must.Matchers.contain
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPropertyChecks with ArbitraryInstances {
 
@@ -40,11 +42,12 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
       val inserts: IO[List[(BookId, Book)]] = IO.parSequenceN(4)(insertActions)
       val allBooks = bookService.getAll()
 
-      inserts.flatMap { insertedBooks =>
-        allBooks.map { allBooks =>
-          if (insertedBooks.nonEmpty)
-            allBooks should contain allElementsOf insertedBooks
-        }
+      for {
+        books <- inserts
+        allBooks <- bookService.getAll()
+      } yield {
+        if (books.nonEmpty)
+          allBooks should contain allElementsOf books
       }
 
     }
@@ -56,16 +59,13 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
 
     bookService.runMigrations().unsafeRunSync()(runtime)
 
-    arbitraryBook.flatMap(book => {
-      import scala.concurrent.ExecutionContext.Implicits.global
-      bookService.create(book).flatMap {
-        case (id, book) => {
-          bookService.get(id).map { maybeBook =>
-            maybeBook should contain(book)
-          }
-        }
-      }
-    })
+    for {
+      book <- arbitraryBook
+      id <- bookService.create(book).map(_._1)
+      maybeBook <- bookService.get(id)
+    } yield {
+      maybeBook should contain(book)
+    }
 
   }
 
