@@ -17,9 +17,9 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
     val db: Database = Database.forURL("jdbc:h2:mem:books;DB_CLOSE_DELAY=-1;CASE_INSENSITIVE_IDENTIFIERS=true", driver = "org.h2.Driver")
   }
 
-  trait PostgresModule extends H2DatabaseProvider with BooksSchema
+  trait H2Module extends H2DatabaseProvider with BooksSchema
 
-  val bookService = new BookService with PostgresModule
+  val bookService = new BookService with H2Module
 
 
   implicit val arbitraryBookEntity: Arbitrary[BookEntity] = Arbitrary {
