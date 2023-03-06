@@ -33,28 +33,23 @@ object Server extends IOApp {
 
     trait H2Module extends H2DatabaseProvider with BooksSchema
 
-    val bookService = new BookServiceImpl with PostgresModule
-
-    val bookServiceH2 = new BookServiceImpl with H2Module
-
-    println(bookService.db == bookServiceH2.db)
-
+    val bookRepository = new BookRepositoryImpl with H2Module
 
     println("Running migrations...")
-    bookServiceH2.runMigrations().unsafeRunSync()
+    bookRepository.runMigrations().unsafeRunSync()
     println("Migrations complete.")
 
-    bookServiceH2.getAll().unsafeRunSync().foreach(println)
+    val bookService = new BookServiceImpl(bookRepository)
 
     val bookRoutes = HttpRoutes.of[IO] {
 
       case GET -> Root / "books" =>
-        bookServiceH2.getAll().flatMap(books =>
+        bookService.getAll().flatMap(books =>
           Ok(books.asJson)
         )
 
       case GET -> Root / "books" / LongVar(id) =>
-        bookServiceH2.get(BookId(id)).flatMap {
+        bookService.get(BookId(id)).flatMap {
           case Some(book) => Ok(book.asJson)
           case None => NotFound()
         }

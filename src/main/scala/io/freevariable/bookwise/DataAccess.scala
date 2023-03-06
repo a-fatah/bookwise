@@ -36,81 +36,10 @@ trait BooksSchema { this: DatabaseProvider =>
     def * = (id.?, name) <> (AuthorEntity.tupled, AuthorEntity.unapply)
   }
 
-  val repository = new BookRepositoryImpl
-
   def runMigrations(): IO[Unit] = {
     val liquibase = new Liquibase("db/changelog/changelog-master.xml",
       new ClassLoaderResourceAccessor(), new JdbcConnection(db.source.createConnection()))
     IO(liquibase.update(""))
   }
 
-  val books = TableQuery[BooksTable]
-  val authors = TableQuery[AuthorsTable]
-
-  trait BookRepository {
-    def all(): IO[Seq[(BookEntity, AuthorEntity)]]
-    def get(id: Long): IO[Option[(BookEntity, AuthorEntity)]]
-    def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity)]]
-    def save(book: BookEntity, author: AuthorEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity)]
-  }
-
-  class BookRepositoryImpl extends BookRepository {
-    override def get(id: Long) = {
-      val result = books.join(authors).on(_.authorId === _.id).filter(_._1.id === id).result
-      IO.fromFuture(IO(db.run(result))).map(_.headOption)
-    }
-
-    override def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity)]] = {
-      val result = books.join(authors).on(_.authorId === _.id).filter(_._1.title === title).result
-      IO.fromFuture(IO(db.run(result))).map(_.headOption)
-    }
-
-    override def all(): IO[Seq[(BookEntity, AuthorEntity)]] = {
-      val result = books.join(authors).on(_.authorId === _.id).result
-      IO.fromFuture(IO(db.run(result)))
-    }
-
-    override def save(book: BookEntity, author: AuthorEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity)] = {
-      val result = for {
-        a <- (authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id)))) += author
-        b <- (books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))) += book.copy(authorId = a.id.get)
-      } yield (a, b)
-
-      IO.fromFuture(IO(db.run(result)))
-    }
-  }
-
-}
-
-trait BookService { self: BooksSchema with DatabaseProvider =>
-
-  def getAll(): IO[Seq[Book]]
-  def get(id: BookId): IO[Option[Book]]
-  def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)]
-  def getByTitle(title: String): IO[Option[Book]]
-}
-
-class BookServiceImpl extends BookService {
-  self: BooksSchema with DatabaseProvider =>
-
-  override def getAll(): IO[Seq[Book]] = repository.all() flatMap { seq =>
-    IO(seq.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
-  }
-
-  override def get(id: BookId): IO[Option[Book]] = repository.get(id.value) flatMap { opt =>
-    IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
-  }
-
-  override def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
-    repository.save(BookEntity(None, book.title, 0, book.pages), AuthorEntity(None, book.author.name)).map {
-      case (author, book) => (BookId(book.id.get), Book(book.title, Author(author.name), book.pages))
-    }
-  }
-
-  override def getByTitle(title: String): IO[Option[Book]] = {
-
-    repository.getByTitle(title) flatMap { opt =>
-      IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
-    }
-  }
 }
