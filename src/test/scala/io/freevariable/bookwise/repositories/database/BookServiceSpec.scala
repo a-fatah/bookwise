@@ -22,7 +22,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
 
   trait H2Module extends H2DatabaseProvider with BooksSchema
 
-  val bookService = new BookService with H2Module
+  val bookService = new BookServiceImpl with H2Module
 
   "BookService" should "return all books" in {
 
@@ -63,6 +63,23 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with ScalaCheckPrope
       book <- arbitraryBook
       id <- bookService.create(book).map(_._1)
       maybeBook <- bookService.get(id)
+    } yield {
+      maybeBook should contain(book)
+    }
+
+  }
+
+
+  "BookService" should "return a book by title" in {
+
+    implicit val runtime: cats.effect.unsafe.IORuntime = cats.effect.unsafe.implicits.global
+
+    bookService.runMigrations().unsafeRunSync()(runtime)
+
+    for {
+      book <- arbitraryBook
+      id <- bookService.create(book).map(_._1)
+      maybeBook <- bookService.getByTitle(book.title)
     } yield {
       maybeBook should contain(book)
     }

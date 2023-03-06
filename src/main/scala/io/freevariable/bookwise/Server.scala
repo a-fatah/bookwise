@@ -23,23 +23,38 @@ object Server extends IOApp {
       val db: Database = Database.forConfig("db.postgres")
     }
 
+    trait H2DatabaseProvider extends DatabaseProvider {
+      override val profile = slick.jdbc.H2Profile
+      import profile.api._
+      val db: Database = Database.forURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
+    }
+
     trait PostgresModule extends PostgresDatabaseProvider with BooksSchema
 
-    val bookService = new BookService with PostgresModule
+    trait H2Module extends H2DatabaseProvider with BooksSchema
+
+    val bookService = new BookServiceImpl with PostgresModule
+
+    val bookServiceH2 = new BookServiceImpl with H2Module
+
+    println(bookService.db == bookServiceH2.db)
+
 
     println("Running migrations...")
-    bookService.runMigrations().unsafeRunSync()
+    bookServiceH2.runMigrations().unsafeRunSync()
     println("Migrations complete.")
+
+    bookServiceH2.getAll().unsafeRunSync().foreach(println)
 
     val bookRoutes = HttpRoutes.of[IO] {
 
       case GET -> Root / "books" =>
-        bookService.getAll().flatMap(books =>
+        bookServiceH2.getAll().flatMap(books =>
           Ok(books.asJson)
         )
 
-      case GET -> Root / "books" / IntVar(id) =>
-        bookService.get(id).flatMap {
+      case GET -> Root / "books" / LongVar(id) =>
+        bookServiceH2.get(BookId(id)).flatMap {
           case Some(book) => Ok(book.asJson)
           case None => NotFound()
         }

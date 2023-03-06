@@ -50,13 +50,18 @@ trait BooksSchema { this: DatabaseProvider =>
   trait BookRepository {
     def all(): IO[Seq[(BookEntity, AuthorEntity)]]
     def get(id: Long): IO[Option[(BookEntity, AuthorEntity)]]
-
+    def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity)]]
     def save(book: BookEntity, author: AuthorEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity)]
   }
 
   class BookRepositoryImpl extends BookRepository {
-    def get(id: Long) = {
+    override def get(id: Long) = {
       val result = books.join(authors).on(_.authorId === _.id).filter(_._1.id === id).result
+      IO.fromFuture(IO(db.run(result))).map(_.headOption)
+    }
+
+    override def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity)]] = {
+      val result = books.join(authors).on(_.authorId === _.id).filter(_._1.title === title).result
       IO.fromFuture(IO(db.run(result))).map(_.headOption)
     }
 
@@ -77,21 +82,35 @@ trait BooksSchema { this: DatabaseProvider =>
 
 }
 
-class BookService {
+trait BookService { self: BooksSchema with DatabaseProvider =>
+
+  def getAll(): IO[Seq[Book]]
+  def get(id: BookId): IO[Option[Book]]
+  def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)]
+  def getByTitle(title: String): IO[Option[Book]]
+}
+
+class BookServiceImpl extends BookService {
   self: BooksSchema with DatabaseProvider =>
 
-  def getAll(): IO[Seq[Book]] = repository.all() flatMap { seq =>
+  override def getAll(): IO[Seq[Book]] = repository.all() flatMap { seq =>
     IO(seq.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
   }
 
-  def get(id: BookId): IO[Option[Book]] = repository.get(id.value) flatMap { opt =>
+  override def get(id: BookId): IO[Option[Book]] = repository.get(id.value) flatMap { opt =>
     IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
   }
 
-  def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
+  override def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
     repository.save(BookEntity(None, book.title, 0, book.pages), AuthorEntity(None, book.author.name)).map {
       case (author, book) => (BookId(book.id.get), Book(book.title, Author(author.name), book.pages))
     }
   }
 
+  override def getByTitle(title: String): IO[Option[Book]] = {
+
+    repository.getByTitle(title) flatMap { opt =>
+      IO(opt.map { case (book, author) => Book(book.title, Author(author.name), book.pages) })
+    }
+  }
 }
