@@ -4,18 +4,7 @@ import cats.effect.IO
 import liquibase.Liquibase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
-import slick.jdbc.JdbcProfile
 
-import scala.concurrent.ExecutionContext
-
-
-trait DatabaseProvider {
-  val profile: JdbcProfile
-
-  import profile.api._
-
-  val db: Database
-}
 
 trait BooksSchema { this: DatabaseProvider =>
 
