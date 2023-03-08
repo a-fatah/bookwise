@@ -18,17 +18,30 @@ trait BooksSchema { this: DatabaseProvider =>
     def * = (id.?, name) <> (AuthorEntity.tupled, AuthorEntity.unapply)
   }
 
+  class PublishersTable(tag: Tag) extends Table[PublisherEntity](tag, "publishers") {
+    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+
+    def name = column[String]("name")
+
+    def * = (id.?, name) <> (PublisherEntity.tupled, PublisherEntity.unapply)
+  }
+
+  val books = TableQuery[BooksTable]
   val authors = TableQuery[AuthorsTable]
+  val publishers = TableQuery[PublishersTable]
 
   class BooksTable (tag: Tag) extends Table[BookEntity](tag, "books") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
     def title = column[String]("title")
+    def isbn = column[String]("isbn")
     def authorId = column[Long]("author_id")
+    def publisherId = column[Long]("publisher_id")
     def pages = column[Int]("pages")
 
     def author = foreignKey("author_fk", authorId, authors)(_.id)
+    def publisher = foreignKey("publisher_fk", publisherId, publishers)(_.id)
 
-    def * = (id.?, title, authorId, pages) <> (BookEntity.tupled, BookEntity.unapply)
+    def * = (id.?, title, isbn, authorId, publisherId, pages) <> (BookEntity.tupled, BookEntity.unapply)
   }
 
 
