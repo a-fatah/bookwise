@@ -19,7 +19,7 @@ class BookServiceImpl(private val repository: BookRepository) extends BookServic
   override def get(id: BookId): IO[Option[Book]] = repository.get(id.value).map(_.map(mapToBook))
 
   override def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
-    val bookEntity = BookEntity(None, book.title, book.isbn, 0, 0, book.pages)
+    val bookEntity = BookEntity(None, book.title, book.isbn, None, None, book.pages)
     val authorEntity = AuthorEntity(None, book.author.name)
     val publisherEntity = PublisherEntity(None, book.publisher.name)
 

@@ -54,7 +54,7 @@ class BookRepositoryImpl extends BookRepository {
     val query = for {
       author <- authorInsert
       publisher <- publisherInsert
-      bookWithIds = book.copy(authorId = author.id.get, publisherId = publisher.id.get)
+      bookWithIds = book.copy(authorId = author.id, publisherId = publisher.id)
       book <- bookInsert += bookWithIds
     } yield (author, book, publisher)
 

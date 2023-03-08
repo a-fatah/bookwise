@@ -11,7 +11,7 @@ trait ArbitraryInstances {
       author <- Gen.posNum[Long]
       publisher <- Gen.posNum[Long]
       pages <- Gen.posNum[Int]
-    } yield BookEntity(None, title, isbn, author, publisher, pages)
+    } yield BookEntity(None, title, isbn, Some(author), Some(publisher), pages)
   }
 
   implicit val arbitraryAuthorEntity: Arbitrary[AuthorEntity] = Arbitrary {

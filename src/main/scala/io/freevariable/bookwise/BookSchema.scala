@@ -40,7 +40,7 @@ trait BooksSchema { this: DatabaseProvider =>
     def author = foreignKey("author_fk", authorId, authors)(_.id)
     def publisher = foreignKey("publisher_fk", publisherId, publishers)(_.id)
 
-    def * = (id.?, title, isbn, authorId, publisherId, pages) <> (BookEntity.tupled, BookEntity.unapply)
+    def * = (id.?, title, isbn, authorId.?, publisherId.?, pages) <> (BookEntity.tupled, BookEntity.unapply)
   }
 
   def runMigrations(): IO[Unit] = {
