@@ -18,9 +18,9 @@ class BookServiceImpl(private val repository: BookRepository) extends BookServic
     case (book, author, publisher) => mapToBook(book, author, publisher)
   })
 
-  override def get(id: BookId): IO[Option[Book]] = repository.get(id.value) flatMap { opt =>
-    IO(opt.map { case (book, author, publisher) => mapToBook(book, author, publisher) })
-  }
+  override def get(id: BookId): IO[Option[Book]] = repository.get(id.value).map(_.map {
+    case (book, author, publisher) => mapToBook(book, author, publisher)
+  })
 
   override def create(book: Book)(implicit ec: ExecutionContext): IO[(BookId, Book)] = {
     val bookEntity = BookEntity(None, book.title, book.isbn, 0, 0, book.pages)
