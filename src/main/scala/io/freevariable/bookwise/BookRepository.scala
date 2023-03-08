@@ -6,11 +6,8 @@ import scala.concurrent.ExecutionContext
 
 trait BookRepository {
   def all(): IO[Seq[(BookEntity, AuthorEntity, PublisherEntity)]]
-
   def get(id: Long): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]]
-
   def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]]
-
   def save(book: BookEntity, author: AuthorEntity, publisherEntity: PublisherEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity, PublisherEntity)]
 }
 

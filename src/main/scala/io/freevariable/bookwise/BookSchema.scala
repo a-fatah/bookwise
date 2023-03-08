@@ -12,7 +12,6 @@ trait BooksSchema { this: DatabaseProvider =>
 
   class AuthorsTable(tag: Tag) extends Table[AuthorEntity](tag, "authors") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-
     def name = column[String]("name")
 
     def * = (id.?, name) <> (AuthorEntity.tupled, AuthorEntity.unapply)
@@ -43,8 +42,6 @@ trait BooksSchema { this: DatabaseProvider =>
 
     def * = (id.?, title, isbn, authorId, publisherId, pages) <> (BookEntity.tupled, BookEntity.unapply)
   }
-
-
 
   def runMigrations(): IO[Unit] = {
     val liquibase = new Liquibase("db/changelog/changelog-master.xml",
