@@ -49,13 +49,19 @@ class BookRepositoryImpl extends BookRepository {
     IO.fromFuture(IO(db.run(query.result)))
   }
 
-  override def save(book: BookEntity, author: AuthorEntity, publisherEntity: PublisherEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity, PublisherEntity)] = {
+  override def save(book: BookEntity, author: AuthorEntity, publisher: PublisherEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity, PublisherEntity)] = {
+    val authorInsert = authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id))) += author
+    val publisherInsert = publishers returning publishers.map(_.id) into ((publisher, id) => publisher.copy(id = Some(id))) += publisher
+    val bookInsert = books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))
+
     val query = for {
-      author <- (authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id)))) += author
-      publisher <- (publishers returning publishers.map(_.id) into ((publisher, id) => publisher.copy(id = Some(id)))) += publisherEntity
-      book <- (books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))) += book.copy(authorId = author.id.get, publisherId = publisher.id.get)
+      author <- authorInsert
+      publisher <- publisherInsert
+      bookWithIds = book.copy(authorId = author.id.get, publisherId = publisher.id.get)
+      book <- bookInsert += bookWithIds
     } yield (author, book, publisher)
 
-    IO.fromFuture(IO(db.run(query)))
+    IO.fromFuture(IO(db.run(query.transactionally)))
   }
+
 }
