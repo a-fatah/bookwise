@@ -52,8 +52,8 @@ class BookRepositoryImpl extends BookRepository {
   override def save(book: BookEntity, author: AuthorEntity, publisherEntity: PublisherEntity)(implicit ec: ExecutionContext): IO[(AuthorEntity, BookEntity, PublisherEntity)] = {
     val query = for {
       author <- (authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id)))) += author
-      book <- (books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))) += book.copy(authorId = author.id.get)
       publisher <- (publishers returning publishers.map(_.id) into ((publisher, id) => publisher.copy(id = Some(id)))) += publisherEntity
+      book <- (books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))) += book.copy(authorId = author.id.get, publisherId = publisher.id.get)
     } yield (author, book, publisher)
 
     IO.fromFuture(IO(db.run(query)))
