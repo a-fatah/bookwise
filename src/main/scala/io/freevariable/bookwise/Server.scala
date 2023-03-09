@@ -44,7 +44,7 @@ object Server extends IOApp {
     val bookRoutes = HttpRoutes.of[IO] {
 
       case GET -> Root / "books" =>
-        bookService.getAll().flatMap(books =>
+        bookService.getAll.flatMap(books =>
           Ok(books.asJson)
         )
 

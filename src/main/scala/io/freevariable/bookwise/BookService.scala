@@ -31,6 +31,13 @@ class BookServiceImpl(private val repository: BookRepository) extends BookServic
   override def getByTitle(title: String): IO[Option[Book]] = repository.getByTitle(title).map(_.map(mapToBook))
 
   private def mapToBook(tuple: (BookEntity, AuthorEntity, PublisherEntity)): Book = tuple match {
-    case (book, author, publisher) => Book(book.title, book.isbn, Author(author.name), Publisher(publisher.name), book.pages)
+    case (book, author, publisher) =>
+      Book(
+        book.title,
+        book.isbn,
+        Author(author.name),
+        Publisher(publisher.name),
+        book.pages
+      )
   }
 }
