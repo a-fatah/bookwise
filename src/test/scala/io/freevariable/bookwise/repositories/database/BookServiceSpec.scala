@@ -38,7 +38,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with BeforeAndAfterE
       val insertActions = books.map(bookService.create)
 
       // Run inserts in parallel
-      val inserts: IO[List[(BookId, Book)]] = IO.parSequenceN(4)(insertActions)
+      val inserts: IO[List[BookId]] = IO.parSequenceN(4)(insertActions)
       val allBooks = bookService.getAll
 
       for {
@@ -55,7 +55,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with BeforeAndAfterE
   "BookService" should "return a book by id" in {
     for {
       book <- arbitraryBook
-      id <- bookService.create(book).map(_._1)
+      id <- bookService.create(book)
       maybeBook <- bookService.get(id)
     } yield {
       maybeBook should contain(book)
@@ -67,7 +67,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with BeforeAndAfterE
   "BookService" should "return a book by title" in {
     for {
       book <- arbitraryBook
-      id <- bookService.create(book).map(_._1)
+      id <- bookService.create(book)
       maybeBook <- bookService.getByTitle(book.title)
     } yield {
       maybeBook should contain(book)

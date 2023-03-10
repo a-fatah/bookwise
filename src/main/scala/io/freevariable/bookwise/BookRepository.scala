@@ -5,12 +5,10 @@ import cats.effect.IO
 import scala.concurrent.ExecutionContext
 
 trait BookRepository {
-  implicit val ec: ExecutionContext
-
-  def all(): IO[Seq[(BookEntity, AuthorEntity, PublisherEntity)]]
-  def get(id: Long): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]]
-  def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]]
-  def save(book: BookEntity, author: AuthorEntity, publisherEntity: PublisherEntity): IO[(AuthorEntity, BookEntity, PublisherEntity)]
+  def all(): IO[Seq[Book]]
+  def get(id: BookId): IO[Option[Book]]
+  def getByTitle(title: String): IO[Option[Book]]
+  def save(book: Book): IO[BookId]
 }
 
 class BookRepositoryImpl extends BookRepository {
@@ -20,49 +18,74 @@ class BookRepositoryImpl extends BookRepository {
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
-  override def get(id: Long): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]] = {
+  override def get(id: BookId): IO[Option[Book]] = {
+    // query for a book by id, including the author and publisher
     val query = for {
-      book <- books.filter(_.id === id)
+      book <- books.filter(_.id === id.value)
       author <- book.author
       publisher <- book.publisher
     } yield (book, author, publisher)
 
-    IO.fromFuture(IO(db.run(query.result.headOption)))
+    // run the query and map the result to a Book
+    val bookQuery = query.result.headOption.map {
+      case Some((book, author, publisher)) => Some(Book(book.title, book.isbn, Author(author.name), Publisher(publisher.name), book.pages))
+      case None => None
+    }
+
+    IO.fromFuture(IO(db.run(bookQuery)))
   }
 
-  override def getByTitle(title: String): IO[Option[(BookEntity, AuthorEntity, PublisherEntity)]] = {
+  override def getByTitle(title: String): IO[Option[Book]] = {
     val query = for {
-      book <- books.filter(_.title === title)
+      book <- books.filter(_.title === title.value)
       author <- book.author
       publisher <- book.publisher
     } yield (book, author, publisher)
 
-    IO.fromFuture(IO(db.run(query.result.headOption)))
+    // run the query and map the result to a Book
+    val bookQuery = query.result.headOption.map {
+      case Some((book, author, publisher)) => Some(Book(book.title, book.isbn, Author(author.name), Publisher(publisher.name), book.pages))
+      case None => None
+    }
+
+    IO.fromFuture(IO(db.run(bookQuery)))
   }
 
-  override def all(): IO[Seq[(BookEntity, AuthorEntity, PublisherEntity)]] = {
+  override def all(): IO[Seq[Book]] = {
     val query = for {
       book <- books
       author <- book.author
       publisher <- book.publisher
     } yield (book, author, publisher)
 
-    IO.fromFuture(IO(db.run(query.result)))
+    // run the query and map the result to a Book
+    val bookQuery = query.result.flatMap { books =>
+      DBIO.successful(books.map {
+        case (book, author, publisher) => Book(book.title, book.isbn, Author(author.name), Publisher(publisher.name), book.pages)
+      })
+    }
+
+    IO.fromFuture(IO(db.run(bookQuery)))
   }
 
-  override def save(book: BookEntity, author: AuthorEntity, publisher: PublisherEntity): IO[(AuthorEntity, BookEntity, PublisherEntity)] = {
-    val authorInsert = authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id))) += author
-    val publisherInsert = publishers returning publishers.map(_.id) into ((publisher, id) => publisher.copy(id = Some(id))) += publisher
+  override def save(book: Book): IO[BookId] = {
+    val bookEntity = BookEntity(id = None, title = book.title.value, isbn = book.isbn.value, authorId = None, publisherId = None, pages = book.pages)
+    val authorEntity = AuthorEntity(id = None, name = book.author.name)
+    val publisherEntity = PublisherEntity(id = None, name = book.publisher.name)
+
+    val authorInsert = authors returning authors.map(_.id) into ((author, id) => author.copy(id = Some(id))) += authorEntity
+    val publisherInsert = publishers returning publishers.map(_.id) into ((publisher, id) => publisher.copy(id = Some(id))) += publisherEntity
     val bookInsert = books returning books.map(_.id) into ((book, id) => book.copy(id = Some(id)))
 
-    val query = for {
+    val inserts = for {
       author <- authorInsert
       publisher <- publisherInsert
-      bookWithIds = book.copy(authorId = author.id, publisherId = publisher.id)
+      bookWithIds = bookEntity.copy(authorId = author.id, publisherId = publisher.id)
       book <- bookInsert += bookWithIds
-    } yield (author, book, publisher)
+      id <- DBIO.successful(book.id.get)
+    } yield BookId(id)
 
-    IO.fromFuture(IO(db.run(query.transactionally)))
+    IO.fromFuture(IO(db.run(inserts.transactionally)))
   }
 
 }

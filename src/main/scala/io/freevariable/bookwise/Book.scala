@@ -1,5 +1,6 @@
 package io.freevariable.bookwise
 
+
 case class Book(title: String, isbn: String, author: Author, publisher: Publisher, pages: Int)
 
 case class BookId(value: Long) extends AnyVal

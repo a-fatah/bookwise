@@ -43,10 +43,14 @@ trait BooksSchema { this: DatabaseProvider =>
     def * = (id.?, title, isbn, authorId.?, publisherId.?, pages) <> (BookEntity.tupled, BookEntity.unapply)
   }
 
+  // use liquibase to run migrations on production database
   def runMigrations(): IO[Unit] = {
     val liquibase = new Liquibase("db/changelog/changelog-master.xml",
       new ClassLoaderResourceAccessor(), new JdbcConnection(db.source.createConnection()))
     IO(liquibase.update(""))
   }
+
+
+  // TODO: add createSchema method to create the schema if it doesn't exist
 
 }
