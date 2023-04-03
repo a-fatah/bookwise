@@ -18,26 +18,13 @@ class BookRepositoryImpl extends BookRepository {
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
-  override def get(id: BookId): IO[Option[Book]] = {
-    // query for a book by id, including the author and publisher
+  override def get(id: BookId): IO[Option[Book]] = findBook(_.id === id.value)
+
+  override def getByTitle(title: String): IO[Option[Book]] = findBook(_.title === title)
+
+  private def findBook(predicate: BooksTable ⇒ Rep[Boolean]): IO[Option[Book]] = {
     val query = for {
-      book <- books.filter(_.id === id.value)
-      author <- book.author
-      publisher <- book.publisher
-    } yield (book, author, publisher)
-
-    // run the query and map the result to a Book
-    val bookQuery = query.result.headOption.map {
-      case Some((book, author, publisher)) => Some(Book(book.title, book.isbn, Author(author.name), Publisher(publisher.name), book.pages))
-      case None => None
-    }
-
-    IO.fromFuture(IO(db.run(bookQuery)))
-  }
-
-  override def getByTitle(title: String): IO[Option[Book]] = {
-    val query = for {
-      book <- books.filter(_.title === title.value)
+      book <- books.filter(predicate)
       author <- book.author
       publisher <- book.publisher
     } yield (book, author, publisher)
