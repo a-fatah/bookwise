@@ -1,4 +1,4 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.db
 
 import slick.jdbc.JdbcProfile
 

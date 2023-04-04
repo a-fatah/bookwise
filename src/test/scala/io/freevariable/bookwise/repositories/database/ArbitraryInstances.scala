@@ -1,6 +1,7 @@
 package io.freevariable.bookwise.repositories.database
 
-import io.freevariable.bookwise.{Author, AuthorEntity, Book, BookEntity, Publisher, PublisherEntity}
+import io.freevariable.bookwise.db.{AuthorEntity, BookEntity, PublisherEntity}
+import io.freevariable.bookwise.model.{Author, Book, Publisher}
 import org.scalacheck.{Arbitrary, Gen}
 
 trait ArbitraryInstances {

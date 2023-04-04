@@ -1,7 +1,9 @@
 package io.freevariable.bookwise.repositories.database
 
 import cats.effect.IO
-import io.freevariable.bookwise._
+import io.freevariable.bookwise.db.{BookRepositoryImpl, BookSchema, DatabaseProvider}
+import io.freevariable.bookwise.model.{Book, BookId}
+import io.freevariable.bookwise.service.BookServiceImpl
 import org.scalacheck.Gen
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
@@ -21,7 +23,7 @@ class BookServiceSpec extends AnyFlatSpec with ScalaFutures with BeforeAndAfterE
     val db: Database = Database.forURL("jdbc:h2:mem:books;DB_CLOSE_DELAY=-1;CASE_INSENSITIVE_IDENTIFIERS=true", driver = "org.h2.Driver")
   }
 
-  trait H2Module extends H2DatabaseProvider with BooksSchema
+  trait H2Module extends H2DatabaseProvider with BookSchema
   val bookRepository = new BookRepositoryImpl with H2Module
   val bookService = new BookServiceImpl(bookRepository)
 

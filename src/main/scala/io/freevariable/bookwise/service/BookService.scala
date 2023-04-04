@@ -1,6 +1,8 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.service
 
 import cats.effect.IO
+import io.freevariable.bookwise.db.BookRepository
+import io.freevariable.bookwise.model.{Book, BookId}
 
 import scala.concurrent.ExecutionContext
 

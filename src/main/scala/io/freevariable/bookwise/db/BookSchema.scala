@@ -1,4 +1,4 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.db
 
 import cats.effect.IO
 import liquibase.Liquibase
@@ -6,7 +6,7 @@ import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 
 
-trait BooksSchema { this: DatabaseProvider =>
+trait BookSchema { this: DatabaseProvider =>
 
   import profile.api._
 
@@ -49,7 +49,6 @@ trait BooksSchema { this: DatabaseProvider =>
       new ClassLoaderResourceAccessor(), new JdbcConnection(db.source.createConnection()))
     IO(liquibase.update(""))
   }
-
 
   // TODO: add createSchema method to create the schema if it doesn't exist
 

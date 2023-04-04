@@ -1,4 +1,4 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.db
 
 case class BookEntity(
    id: Option[Long],

@@ -1,4 +1,4 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.model
 
 
 case class Book(title: String, isbn: String, author: Author, publisher: Publisher, pages: Int)

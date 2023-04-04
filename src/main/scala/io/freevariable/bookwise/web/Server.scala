@@ -1,4 +1,4 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.web
 
 import cats.effect._
 import cats.effect.unsafe.implicits.global
@@ -6,6 +6,9 @@ import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import io.freevariable.bookwise.db.{BookRepositoryImpl, BookSchema, DatabaseProvider}
+import io.freevariable.bookwise.model.BookId
+import io.freevariable.bookwise.service.BookServiceImpl
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
@@ -29,9 +32,9 @@ object Server extends IOApp {
       val db: Database = Database.forURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
     }
 
-    trait PostgresModule extends PostgresDatabaseProvider with BooksSchema
+    trait PostgresModule extends PostgresDatabaseProvider with BookSchema
 
-    trait H2Module extends H2DatabaseProvider with BooksSchema
+    trait H2Module extends H2DatabaseProvider with BookSchema
 
     val bookRepository = new BookRepositoryImpl with H2Module
 

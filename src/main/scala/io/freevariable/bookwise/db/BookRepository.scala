@@ -1,6 +1,7 @@
-package io.freevariable.bookwise
+package io.freevariable.bookwise.db
 
 import cats.effect.IO
+import io.freevariable.bookwise.model.{Author, Book, BookId, Publisher}
 
 import scala.concurrent.ExecutionContext
 
@@ -12,7 +13,7 @@ trait BookRepository {
 }
 
 class BookRepositoryImpl extends BookRepository {
-  self: BooksSchema with DatabaseProvider =>
+  self: BookSchema with DatabaseProvider =>
 
   import profile.api._
 
